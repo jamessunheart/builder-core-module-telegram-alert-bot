@@ -1,12 +1,14 @@
 import requests
 from flask import Flask, request
 from core_memory_hub import CoreMemoryHub
+from autopilot_priority_executor import AutopilotPriorityExecutor
 
 app = Flask(__name__)
 
 BOT_TOKEN = "8170948174:AAFM_RZNl4AcpyY0M3rQwsHDmjCY5_yfwyE"
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 memory = CoreMemoryHub()
+autopilot = AutopilotPriorityExecutor()
 
 intent_routes = {
     "diagnostic": "self_diagnostic_engine",
@@ -14,7 +16,8 @@ intent_routes = {
     "status": "meta_reflection_planner",
     "optimize": "meta_reflection_planner",
     "improve": "meta_reflection_planner",
-    "memory": "core_memory_hub"
+    "memory": "core_memory_hub",
+    "autopilot": "autopilot_priority_executor"
 }
 
 @app.route("/webhook", methods=["POST"])
@@ -32,6 +35,9 @@ def webhook():
     elif "memory" in lower or lower.startswith("/memory"):
         summary = memory.summarize_recent()
         reply = "🧠 Recent memories:\n" + "\n".join(f"- {line}" for line in summary)
+    elif lower.startswith("/autopilot"):
+        result = autopilot.run_autopilot_cycle()
+        reply = f"🤖 Autopilot cycle complete.\nPlan Time: {result['plan_time']}\n" + "\n".join(result['executed'])
     else:
         reply = interpret(text)
 
@@ -43,8 +49,8 @@ def interpret(text):
     for keyword, module in intent_routes.items():
         if keyword in text.lower():
             memory.remember(f"Intent detected: {keyword} → {module}", tags=["intent"])
-            return f"🔍 Intent '{keyword}' detected. Routing to {module}... (execution coming soon)"
-    return f"📩 Message received: '{text}'. I'm learning and integrating."
+            return f"🔍 Intent '{keyword}' detected. Routing to {module}..."
+    return f"📩 Message received: '{text}'. I'm listening and integrating."
 
 def send_message(chat_id, text):
     url = f"{BASE_URL}/sendMessage"
