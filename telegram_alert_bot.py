@@ -1,10 +1,12 @@
 import requests
 from flask import Flask, request
+from core_memory_hub import CoreMemoryHub
 
 app = Flask(__name__)
 
 BOT_TOKEN = "8170948174:AAFM_RZNl4AcpyY0M3rQwsHDmjCY5_yfwyE"
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
+memory = CoreMemoryHub()
 
 intent_routes = {
     "diagnostic": "self_diagnostic_engine",
@@ -18,25 +20,27 @@ intent_routes = {
 def webhook():
     data = request.get_json()
     chat_id = data['message']['chat']['id']
-    text = data['message'].get('text', '').strip().lower()
+    text = data['message'].get('text', '').strip()
+    lower = text.lower()
 
-    if text == "/start":
+    if lower == "/start":
         reply = "✅ Builder Core is active and evolving. Ask me anything."
-    elif "what are we optimizing" in text:
+    elif "what are we optimizing" in lower:
         reply = ("🧠 We're continuously optimizing clarity, responsiveness, and system intelligence. "
-                 "I monitor feedback, adapt my behavior, and reflect on performance to improve the Builder Core experience. "
-                 "Want me to run a diagnostic or surface recent learnings?")
+                 "I monitor feedback, adapt my behavior, and reflect on performance. Want diagnostics or a system check?")
     else:
-        reply = interpret(text)
+        reply = interpret(lower)
 
+    memory.remember(f"User said: {text}", tags=["telegram", "user"])
     send_message(chat_id, reply)
     return {"ok": True}
 
 def interpret(text):
     for keyword, module in intent_routes.items():
         if keyword in text:
-            return f"🔍 I sense you're focused on '{keyword}'. Routing that to {module}... (soon with real execution)"
-    return f"📩 Message received: '{text}'. I'm learning and integrating."
+            memory.remember(f"Intent detected: {keyword} → {module}", tags=["intent"])
+            return f"🔍 Intent '{keyword}' detected. Routing to {module}... (execution pending)"
+    return f"📩 Message received: '{text}'. I'm listening and learning."
 
 def send_message(chat_id, text):
     url = f"{BASE_URL}/sendMessage"
