@@ -18,7 +18,8 @@ intent_routes = {
     "optimize": "meta_reflection_planner",
     "improve": "meta_reflection_planner",
     "memory": "core_memory_hub",
-    "autopilot": "autopilot_priority_executor"
+    "autopilot": "autopilot_priority_executor",
+    "archive": "core_memory_hub"
 }
 
 @app.route("/webhook", methods=["POST"])
@@ -39,6 +40,12 @@ def webhook():
 
     if lower == "/start":
         reply = "✅ Builder Core is active and evolving. Ask me anything."
+    elif lower.startswith("/archive") or "last full conversation" in lower:
+        archives = memory.recall(tag_filter=["archive"])
+        if archives:
+            reply = "🗂️ Latest archived conversation:\n" + archives[-1]['entry'][-1000:]  # Limit reply size
+        else:
+            reply = "🗃️ No archived conversations found yet. Keep chatting!"
     elif "what are we optimizing" in lower:
         reply = ("🧠 We're continuously optimizing clarity, responsiveness, and system intelligence. "
                  "I monitor feedback, adapt my behavior, and reflect on performance. Want diagnostics or a system check?")
