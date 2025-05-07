@@ -1,0 +1,6 @@
+{
+  "name": "telegram_alert_bot",
+  "auto_deploy": false,
+  "safety_checks": true,
+  "pause_enabled": true
+}
