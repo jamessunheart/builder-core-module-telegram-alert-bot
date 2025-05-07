@@ -1,24 +1,32 @@
 import requests
+from flask import Flask, request
 
-class TelegramAlertBot:
-    def __init__(self):
-        # Token assumed stored securely in Builder Core for claritycompanion_bot
-        self.bot_token = "{{CLARITY_COMPANION_BOT_TOKEN}}"  # placeholder for secure system-side token
-        self.chat_id = "3022337116"  # replace with real chat_id if mapped
+app = Flask(__name__)
 
-    def send_message(self, message):
-        url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
-        data = {
-            "chat_id": self.chat_id,
-            "text": message
-        }
-        try:
-            response = requests.post(url, data=data)
-            return response.json()
-        except Exception as e:
-            return {"error": str(e)}
+BOT_TOKEN = "{{CLARITY_COMPANION_BOT_TOKEN}}"
+BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
-# Trigger real alert
-bot = TelegramAlertBot()
-result = bot.send_message("🚨 Builder Core Alert: This is a live test from @claritycompanion_bot.")
-print("Telegram Send Result:", result)
+@app.route(f"/{BOT_TOKEN}", methods=["POST"])
+def webhook():
+    data = request.get_json()
+    chat_id = data['message']['chat']['id']
+    text = data['message'].get('text', '')
+
+    if text == "/start":
+        send_message(chat_id, "✅ Builder Core bot connected. Your alerts are now active!")
+        # Log chat_id securely (simulated)
+        print(f"Captured chat_id: {chat_id}")
+
+    return {"ok": True}
+
+def send_message(chat_id, text):
+    url = f"{BASE_URL}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": text
+    }
+    requests.post(url, data=payload)
+
+# Flask app to listen for Telegram updates (mocked locally here)
+if __name__ == "__main__":
+    print("Telegram bot webhook listening (mock mode)")
