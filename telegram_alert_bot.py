@@ -1,32 +1,35 @@
 import requests
-from flask import Flask, request
 
-app = Flask(__name__)
+class TelegramAlertBot:
+    def __init__(self):
+        self.bot_token = "{{CLARITY_COMPANION_BOT_TOKEN}}"
+        self.username = "jsunheart"
+        self.chat_id = self.resolve_chat_id()
 
-BOT_TOKEN = "{{CLARITY_COMPANION_BOT_TOKEN}}"
-BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
+    def resolve_chat_id(self):
+        # In practice, this requires prior interaction and possibly a database
+        # Here we simulate or require pre-mapped chat ID
+        known_ids = {
+            "jsunheart": "USER_CHAT_ID_PLACEHOLDER"  # Replace with actual ID once known
+        }
+        return known_ids.get(self.username, None)
 
-@app.route(f"/{BOT_TOKEN}", methods=["POST"])
-def webhook():
-    data = request.get_json()
-    chat_id = data['message']['chat']['id']
-    text = data['message'].get('text', '')
+    def send_message(self, message):
+        if not self.chat_id:
+            return {"error": "Chat ID not found for user."}
+        url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
+        data = {
+            "chat_id": self.chat_id,
+            "text": message
+        }
+        try:
+            response = requests.post(url, data=data)
+            return response.json()
+        except Exception as e:
+            return {"error": str(e)}
 
-    if text == "/start":
-        send_message(chat_id, "✅ Builder Core bot connected. Your alerts are now active!")
-        # Log chat_id securely (simulated)
-        print(f"Captured chat_id: {chat_id}")
-
-    return {"ok": True}
-
-def send_message(chat_id, text):
-    url = f"{BASE_URL}/sendMessage"
-    payload = {
-        "chat_id": chat_id,
-        "text": text
-    }
-    requests.post(url, data=payload)
-
-# Flask app to listen for Telegram updates (mocked locally here)
-if __name__ == "__main__":
-    print("Telegram bot webhook listening (mock mode)")
+# Attempt to send real message now
+bot = TelegramAlertBot()
+print("Sending message to jsunheart...")
+result = bot.send_message("⚡ Builder Core alert test to @jsunheart.")
+print("Telegram result:", result)
