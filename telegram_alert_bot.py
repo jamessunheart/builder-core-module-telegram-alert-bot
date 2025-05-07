@@ -9,8 +9,6 @@ BOT_TOKEN = "8170948174:AAFM_RZNl4AcpyY0M3rQwsHDmjCY5_yfwyE"
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 memory = CoreMemoryHub()
 autopilot = AutopilotPriorityExecutor()
-
-# Simple short-term memory
 conversation_history = {}
 
 intent_routes = {
@@ -32,7 +30,12 @@ def webhook():
 
     history = conversation_history.get(chat_id, [])
     history.append(text)
-    conversation_history[chat_id] = history[-10:]  # keep last 10
+    if len(history) > 20:
+        archive = "\n".join(history)
+        memory.remember(f"Archived conversation with user {chat_id}:\n{archive}", tags=["archive", "conversation"])
+        conversation_history[chat_id] = []
+    else:
+        conversation_history[chat_id] = history
 
     if lower == "/start":
         reply = "✅ Builder Core is active and evolving. Ask me anything."
@@ -57,10 +60,8 @@ def interpret(text, chat_id):
         if keyword in text.lower():
             memory.remember(f"Intent detected: {keyword} → {module}", tags=["intent"])
             return f"🔍 Intent '{keyword}' detected. Routing to {module}..."
-
     context = conversation_history.get(chat_id, [])
-    response = f"🧠 You said: '{text}'. Based on our recent conversation: {context[-3:]}. I’m learning."
-    return response
+    return f"🧠 You said: '{text}'. Here's recent context: {context[-3:]}."
 
 def send_message(chat_id, text):
     url = f"{BASE_URL}/sendMessage"
