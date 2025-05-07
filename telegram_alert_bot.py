@@ -13,7 +13,8 @@ intent_routes = {
     "log": "core_log_hub",
     "status": "meta_reflection_planner",
     "optimize": "meta_reflection_planner",
-    "improve": "meta_reflection_planner"
+    "improve": "meta_reflection_planner",
+    "memory": "core_memory_hub"
 }
 
 @app.route("/webhook", methods=["POST"])
@@ -28,8 +29,11 @@ def webhook():
     elif "what are we optimizing" in lower:
         reply = ("🧠 We're continuously optimizing clarity, responsiveness, and system intelligence. "
                  "I monitor feedback, adapt my behavior, and reflect on performance. Want diagnostics or a system check?")
+    elif "memory" in lower or lower.startswith("/memory"):
+        summary = memory.summarize_recent()
+        reply = "🧠 Recent memories:\n" + "\n".join(f"- {line}" for line in summary)
     else:
-        reply = interpret(lower)
+        reply = interpret(text)
 
     memory.remember(f"User said: {text}", tags=["telegram", "user"])
     send_message(chat_id, reply)
@@ -37,10 +41,10 @@ def webhook():
 
 def interpret(text):
     for keyword, module in intent_routes.items():
-        if keyword in text:
+        if keyword in text.lower():
             memory.remember(f"Intent detected: {keyword} → {module}", tags=["intent"])
-            return f"🔍 Intent '{keyword}' detected. Routing to {module}... (execution pending)"
-    return f"📩 Message received: '{text}'. I'm listening and learning."
+            return f"🔍 Intent '{keyword}' detected. Routing to {module}... (execution coming soon)"
+    return f"📩 Message received: '{text}'. I'm learning and integrating."
 
 def send_message(chat_id, text):
     url = f"{BASE_URL}/sendMessage"
