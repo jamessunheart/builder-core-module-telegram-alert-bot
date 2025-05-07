@@ -10,6 +10,9 @@ BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 memory = CoreMemoryHub()
 autopilot = AutopilotPriorityExecutor()
 
+# Simple short-term memory
+conversation_history = {}
+
 intent_routes = {
     "diagnostic": "self_diagnostic_engine",
     "log": "core_log_hub",
@@ -27,6 +30,10 @@ def webhook():
     text = data['message'].get('text', '').strip()
     lower = text.lower()
 
+    history = conversation_history.get(chat_id, [])
+    history.append(text)
+    conversation_history[chat_id] = history[-10:]  # keep last 10
+
     if lower == "/start":
         reply = "✅ Builder Core is active and evolving. Ask me anything."
     elif "what are we optimizing" in lower:
@@ -39,18 +46,21 @@ def webhook():
         result = autopilot.run_autopilot_cycle()
         reply = f"🤖 Autopilot cycle complete.\nPlan Time: {result['plan_time']}\n" + "\n".join(result['executed'])
     else:
-        reply = interpret(text)
+        reply = interpret(text, chat_id)
 
     memory.remember(f"User said: {text}", tags=["telegram", "user"])
     send_message(chat_id, reply)
     return {"ok": True}
 
-def interpret(text):
+def interpret(text, chat_id):
     for keyword, module in intent_routes.items():
         if keyword in text.lower():
             memory.remember(f"Intent detected: {keyword} → {module}", tags=["intent"])
             return f"🔍 Intent '{keyword}' detected. Routing to {module}..."
-    return f"📩 Message received: '{text}'. I'm listening and integrating."
+
+    context = conversation_history.get(chat_id, [])
+    response = f"🧠 You said: '{text}'. Based on our recent conversation: {context[-3:]}. I’m learning."
+    return response
 
 def send_message(chat_id, text):
     url = f"{BASE_URL}/sendMessage"
